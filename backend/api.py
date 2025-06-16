@@ -20,12 +20,12 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 DB = RestaurantDatabaseDriver()
 
-# voices = {
-#     "greeter": "OYTbf65OHHFELVut7v2H",
-#     "reservation": "1SM7GgM6IMuvQlz2BwM3",
-#     "takeaway": "scOwDtmlUjD3prqpp97I",
-#     "checkout": "OYTbf65OHHFELVut7v2H",
-# }
+voices = {
+    "greeter": "EXAVITQu4vr4xnSDxMaL",
+    "reservation": "IKne3meq5aSn9XLyUdCD",
+    "takeaway": "TX3LPaxmHKxFdv7VOQHJ",
+    "checkout": "cgSgspJ2msm6clMCkdW9",
+}
 
 @dataclass
 class UserData:
@@ -150,7 +150,7 @@ class Greeter(BaseAgent):
                 "make a reservation or order takeaway. Guide them to the right agent using tools."
             ),
             llm=openai.LLM(parallel_tool_calls=False),
-            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY")),
+            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"), voice_id=voices['greeter']),
         )
         self.menu = menu
 
@@ -177,7 +177,7 @@ class Reservation(BaseAgent):
             "the reservation date, the reservation time, then customer's name, number of people and phone number. Then "
             "confirm the reservation details with the customer.",
             tools=[update_name, update_phone, to_greeter],
-            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"))
+            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"), voice_id=voices['reservation'])
         )
 
     @function_tool()
@@ -236,7 +236,7 @@ class Takeaway(BaseAgent):
                 "Clarify special requests and confirm the order with the customer."
             ),
             tools=[to_greeter],
-            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"))
+            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"), voice_id=voices['takeaway'])
         )
 
     @function_tool()
@@ -270,7 +270,7 @@ class Checkout(BaseAgent):
                 "information, including the card number, expiry date, and CVV step by step."
             ),
             tools=[update_name, update_phone, to_greeter],
-            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"))
+            tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"), voice_id=voices['checkout'])
         )
 
     @function_tool()
