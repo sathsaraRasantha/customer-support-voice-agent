@@ -12,17 +12,20 @@ from livekit.agents.voice import Agent, RunContext
 
 from livekit.plugins import openai, elevenlabs
 
-logger = logging.getLogger("restaurant-example")
+from db_driver import RestaurantDatabaseDriver
+
+logger = logging.getLogger("restaurant-customer-support")
 logger.setLevel(logging.INFO)
 
 load_dotenv()
+DB = RestaurantDatabaseDriver()
 
-voices = {
-    "greeter": "OYTbf65OHHFELVut7v2H",
-    "reservation": "1SM7GgM6IMuvQlz2BwM3",
-    "takeaway": "scOwDtmlUjD3prqpp97I",
-    "checkout": "OYTbf65OHHFELVut7v2H",
-}
+# voices = {
+#     "greeter": "OYTbf65OHHFELVut7v2H",
+#     "reservation": "1SM7GgM6IMuvQlz2BwM3",
+#     "takeaway": "scOwDtmlUjD3prqpp97I",
+#     "checkout": "OYTbf65OHHFELVut7v2H",
+# }
 
 @dataclass
 class UserData:
@@ -30,6 +33,9 @@ class UserData:
     customer_phone: Optional[str] = None
 
     reservation_time: Optional[str] = None
+    reservation_date: Optional[str] = None
+    num_people: Optional[int] = None
+    table_number: Optional[int] = None
 
     order: Optional[list[str]] = None
 
@@ -168,7 +174,7 @@ class Reservation(BaseAgent):
     def __init__(self) -> None:
         super().__init__(
             instructions="You are a reservation agent at a restaurant. Your jobs are to ask for "
-            "the reservation time, then customer's name, and phone number. Then "
+            "the reservation date, the reservation time, then customer's name, number of people and phone number. Then "
             "confirm the reservation details with the customer.",
             tools=[update_name, update_phone, to_greeter],
             tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY"))
@@ -177,14 +183,24 @@ class Reservation(BaseAgent):
     @function_tool()
     async def update_reservation_time(
         self,
+        date: Annotated[str, Field(description="The reservation date")],
         time: Annotated[str, Field(description="The reservation time")],
+        num_peple: Annotated[str, Field(description="Number of people")],
         context: RunContext_T,
     ) -> str:
         """Called when the user provides their reservation time.
         Confirm the time with the user before calling the function."""
+        
+        #add the database logic here to find the available table for the specific date and time.
+        table_number = 3
+
         userdata = context.userdata
+        userdata.reservation_date = date
         userdata.reservation_time = time
-        return f"The reservation time is updated to {time}"
+        userdata.num_people = num_peple
+        userdata.table_number = table_number
+        
+        return f"The reservation time is updated to {time} in {date} for {num_peple}. Your table number is {table_number}."
 
     @function_tool()
     async def confirm_reservation(self, context: RunContext_T) -> str | tuple[Agent, str]:
@@ -192,9 +208,21 @@ class Reservation(BaseAgent):
         userdata = context.userdata
         if not userdata.customer_name or not userdata.customer_phone:
             return "Please provide your name and phone number first."
+        
+        if not userdata.reservation_date:
+            return "Please provide reservation date first."
 
         if not userdata.reservation_time:
             return "Please provide reservation time first."
+        
+        if not userdata.num_people:
+            return "Please provide number of people for the reservation."
+        
+        result = DB.create_reservation(userdata.customer_name, userdata.customer_phone, userdata.reservation_date, userdata.reservation_time,
+                           userdata.table_number, userdata.num_people)
+        if result is None:
+            return "Failed to create order"
+        print(f"DB query ran succesfully : {result}")
 
         return await self._transfer_to_agent("greeter", context)
 
