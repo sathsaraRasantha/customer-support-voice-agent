@@ -1,21 +1,20 @@
 import os
 import logging
 from dataclasses import dataclass, field
-from typing import Annotated, Optional
 
-import yaml
 from dotenv import load_dotenv
 from pydantic import Field
 
-from livekit.agents import JobContext, WorkerOptions, cli
+from livekit.agents import JobContext, WorkerOptions, cli, AutoSubscribe
 from livekit.agents.llm import function_tool
-from livekit.agents.voice import Agent, AgentSession, RunContext
+from livekit.agents.voice import AgentSession
 from livekit.agents.voice.room_io import RoomInputOptions
-from livekit.plugins import cartesia, deepgram, openai, silero,elevenlabs
+from livekit.plugins import openai, silero,elevenlabs
 from api import UserData, Greeter, Reservation, Takeaway, Checkout
 
 async def entrypoint(ctx: JobContext):
-    await ctx.connect()
+    await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
+    await ctx.wait_for_participant()
 
     menu = "Pizza: $10, Salad: $5, Ice Cream: $3, Coffee: $2"
     userdata = UserData()
