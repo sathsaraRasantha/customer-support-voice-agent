@@ -1,7 +1,6 @@
 venv/
 
 .env
-backend/.env
 
 backend/__pycache__/
 backend/restaurant_db.sqlite
