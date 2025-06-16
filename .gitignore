@@ -1,7 +1,9 @@
 venv/
 
-.env
+backend/.env
 
 backend/__pycache__/
 backend/restaurant_db.sqlite
 
+frontend/node_modules/
+frontend/.env
