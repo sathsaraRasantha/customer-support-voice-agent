@@ -1,3 +1,4 @@
+import { Track } from "livekit-client";
 import {
   useVoiceAssistant,
   BarVisualizer,
@@ -5,17 +6,28 @@ import {
   useTrackTranscription,
   useLocalParticipant,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
 import { useEffect, useState } from "react";
+import { Bot, User, Mic, MicOff } from "lucide-react";
 import "./SimpleVoiceAssistant.css";
 
 const Message = ({ type, text }) => {
-  return <div className="message">
-    <strong className={`message-${type}`}>
-      {type === "agent" ? "Agent: " : "You: "}
-    </strong>
-    <span className="message-text">{text}</span>
-  </div>;
+  return (
+    <div className={`message-bubble ${type === "agent" ? "agent" : "user"}`}>
+      <div className="message-avatar">
+        {type === "agent" ? (
+          <Bot className="w-5 h-5" />
+        ) : (
+          <User className="w-5 h-5" />
+        )}
+      </div>
+      <div className="message-content">
+        <div className="message-header">
+          {type === "agent" ? "Restaurant Assistant" : "You"}
+        </div>
+        <div className="message-text">{text}</div>
+      </div>
+    </div>
+  );
 };
 
 const SimpleVoiceAssistant = () => {
@@ -37,17 +49,79 @@ const SimpleVoiceAssistant = () => {
     setMessages(allMessages);
   }, [agentTranscriptions, userTranscriptions]);
 
+  const getStateIcon = () => {
+    switch (state) {
+      case "listening":
+        return <Mic className="w-6 h-6 text-green-500 animate-pulse" />;
+      case "thinking":
+        return <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />;
+      case "speaking":
+        return <Bot className="w-6 h-6 text-blue-500 animate-bounce" />;
+      default:
+        return <MicOff className="w-6 h-6 text-gray-400" />;
+    }
+  };
+
+  const getStateText = () => {
+    switch (state) {
+      case "listening":
+        return "Listening to your request...";
+      case "thinking":
+        return "Processing your request...";
+      case "speaking":
+        return "Assistant is responding...";
+      default:
+        return "Ready to help you";
+    }
+  };
+
   return (
-    <div className="voice-assistant-container">
-      <div className="visualizer-container">
-        <BarVisualizer state={state} barCount={7} trackRef={audioTrack} />
+    <div className="restaurant-voice-container">
+      {/* Status Header */}
+      <div className="status-header">
+        <div className="status-indicator">
+          {getStateIcon()}
+          <span className="status-text">{getStateText()}</span>
+        </div>
       </div>
+
+      {/* Audio Visualizer */}
+      <div className="visualizer-section">
+        <div className="visualizer-wrapper">
+          <BarVisualizer 
+            state={state} 
+            barCount={12} 
+            trackRef={audioTrack}
+            className="restaurant-visualizer"
+          />
+        </div>
+        <div className="visualizer-glow"></div>
+      </div>
+
+      {/* Control Bar */}
       <div className="control-section">
         <VoiceAssistantControlBar />
-        <div className="conversation">
-          {messages.map((msg, index) => (
-            <Message key={msg.id || index} type={msg.type} text={msg.text} />
-          ))}
+      </div>
+
+      {/* Conversation */}
+      <div className="conversation-section">
+        <div className="conversation-header">
+          <h3>Conversation</h3>
+          <div className="conversation-count">
+            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+          </div>
+        </div>
+        <div className="conversation-messages">
+          {messages.length === 0 ? (
+            <div className="empty-conversation">
+              <Bot className="w-12 h-12 text-amber-400 mb-3" />
+              <p className="text-gray-500">Start speaking to begin your conversation with our restaurant assistant</p>
+            </div>
+          ) : (
+            messages.map((msg, index) => (
+              <Message key={msg.id || index} type={msg.type} text={msg.text} />
+            ))
+          )}
         </div>
       </div>
     </div>
