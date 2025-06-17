@@ -1,4 +1,3 @@
-import { Track } from "livekit-client";
 import {
   useVoiceAssistant,
   BarVisualizer,
@@ -6,7 +5,8 @@ import {
   useTrackTranscription,
   useLocalParticipant,
 } from "@livekit/components-react";
-import { useEffect, useState } from "react";
+import { Track } from "livekit-client";
+import { useEffect, useState, useRef } from "react";
 import { Bot, User, Mic, MicOff } from "lucide-react";
 import "./SimpleVoiceAssistant.css";
 
@@ -40,14 +40,43 @@ const SimpleVoiceAssistant = () => {
   });
 
   const [messages, setMessages] = useState([]);
+  const messagesEndRef = useRef(null);
+  const conversationRef = useRef(null);
 
+  // Function to scroll to bottom
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: "smooth",
+        block: "end"
+      });
+    }
+  };
+
+  // Update messages when transcriptions change
   useEffect(() => {
     const allMessages = [
       ...(agentTranscriptions?.map((t) => ({ ...t, type: "agent" })) ?? []),
       ...(userTranscriptions?.map((t) => ({ ...t, type: "user" })) ?? []),
     ].sort((a, b) => a.firstReceivedTime - b.firstReceivedTime);
+    
     setMessages(allMessages);
   }, [agentTranscriptions, userTranscriptions]);
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    // Small delay to ensure DOM is updated
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [messages]);
+
+  // Also scroll when component mounts
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
 
   const getStateIcon = () => {
     switch (state) {
@@ -111,16 +140,19 @@ const SimpleVoiceAssistant = () => {
             {messages.length} {messages.length === 1 ? 'message' : 'messages'}
           </div>
         </div>
-        <div className="conversation-messages">
+        <div className="conversation-messages" ref={conversationRef}>
           {messages.length === 0 ? (
             <div className="empty-conversation">
               <Bot className="w-12 h-12 text-amber-400 mb-3" />
               <p className="text-gray-500">Start speaking to begin your conversation with our restaurant assistant</p>
             </div>
           ) : (
-            messages.map((msg, index) => (
-              <Message key={msg.id || index} type={msg.type} text={msg.text} />
-            ))
+            <>
+              {messages.map((msg, index) => (
+                <Message key={msg.id || index} type={msg.type} text={msg.text} />
+              ))}
+              <div ref={messagesEndRef} style={{ height: '1px' }} />
+            </>
           )}
         </div>
       </div>
