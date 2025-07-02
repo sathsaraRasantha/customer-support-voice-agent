@@ -9,7 +9,7 @@ from livekit.agents import JobContext, WorkerOptions, cli, AutoSubscribe
 from livekit.agents.llm import function_tool
 from livekit.agents.voice import AgentSession
 from livekit.agents.voice.room_io import RoomInputOptions
-from livekit.plugins import openai, silero,elevenlabs
+from livekit.plugins import openai, silero,elevenlabs, groq
 from api import UserData, Greeter, Reservation, Takeaway, Checkout
 
 async def entrypoint(ctx: JobContext):
@@ -28,8 +28,10 @@ async def entrypoint(ctx: JobContext):
     )
     session = AgentSession[UserData](
         userdata=userdata,
-        llm = openai.LLM(api_key=os.environ.get("OPENAI_API_KEY"), model="gpt-4o"),
-        stt = openai.STT(),
+        # llm = openai.LLM(api_key=os.environ.get("OPENAI_API_KEY"), model="gpt-4o"),
+        # stt = openai.STT(),
+        llm = groq.LLM(api_key=os.environ.get("GROQ_API_KEY"), model="llama3-8b-8192"),
+        stt = groq.STT(api_key=os.environ.get("GROQ_API_KEY"), model="whisper-large-v3-turbo",language="en",),
         tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY")),
         vad=silero.VAD.load(),
         max_tool_steps=5,
