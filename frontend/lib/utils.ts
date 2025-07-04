@@ -51,6 +51,17 @@ export const getAppConfig = cache(async (origin: string): Promise<AppConfig> => 
         headers: { 'X-Sandbox-ID': sandboxId },
       });
 
+      if (!response.ok) {
+        console.error(`Config endpoint returned status ${response.status}`);
+        return APP_CONFIG_DEFAULTS;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        console.error(`Expected JSON, got ${contentType}`);
+        return APP_CONFIG_DEFAULTS;
+      }
+
       const remoteConfig: SandboxConfig = await response.json();
       const config: AppConfig = { ...APP_CONFIG_DEFAULTS };
 
@@ -61,14 +72,14 @@ export const getAppConfig = cache(async (origin: string): Promise<AppConfig> => 
           typeof config[key as keyof AppConfig] === entry.type &&
           typeof config[key as keyof AppConfig] === typeof entry.value
         ) {
-          // @ts-expect-error I'm not sure quite how to appease TypeScript, but we've thoroughly checked types above
+          // @ts-expect-error - type checked above
           config[key as keyof AppConfig] = entry.value as AppConfig[keyof AppConfig];
         }
       }
 
       return config;
     } catch (error) {
-      console.error('!!!', error);
+      console.error('Error fetching config:', error);
     }
   }
 
