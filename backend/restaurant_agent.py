@@ -11,6 +11,7 @@ from livekit.agents.voice import AgentSession
 from livekit.agents.voice.room_io import RoomInputOptions
 from livekit.plugins import openai, silero,elevenlabs, groq
 from api import UserData, Greeter, Reservation, Takeaway, Checkout
+load_dotenv()
 
 async def entrypoint(ctx: JobContext):
     await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
@@ -35,8 +36,6 @@ async def entrypoint(ctx: JobContext):
         tts = elevenlabs.TTS(api_key=os.environ.get("ELEVENLABS_API_KEY")),
         vad=silero.VAD.load(),
         max_tool_steps=5,
-        # to use realtime model, replace the stt, llm, tts and vad with the following
-        # llm=openai.realtime.RealtimeModel(voice="alloy"),
     )
 
     await session.start(
